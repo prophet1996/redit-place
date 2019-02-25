@@ -1,27 +1,69 @@
 import React, { Component } from 'react';
 import { CirclePicker } from 'react-color';
 import './App.css';
+import firebase from "firebase"
 const PIXEL_SIZE = 10;
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       pixels: [
-        { x: 6, y: 8, color: '#99CCFF' },
-        { x: 9, y: 18, color: 'red' },
-        { x: 6, y: 10, color: 'blue' },
-        { x: 15, y: 5, color: 'grey' },
+
       ]
+
     }
+    firebase.initializeApp({
+      apiKey: 'AIzaSyB0Krqd5-hrc6qaiSHTakENr6bsempLhH0',
+      authDomain: 'redit-place.firebase.com',
+      projectId: 'redit-place'
+    });
+    firebase.
+      firestore().
+      collection("pixels").
+      onSnapshot((coll) => {
+        this.setState({ pixels: coll.docs.map((doc) => doc.data()) })
+
+      })
   }
   handlePixelClick(e) {
-    console.log('clicked', e.clientY, e.clientX);
     // this.setState()
     const coordinates = {
       x: Math.floor(e.clientX / PIXEL_SIZE),
       y: Math.floor(e.clientY / PIXEL_SIZE),
-      color: this.state.currentColor
     }
+    this.setState({ selectedCoordinate: coordinates })
+    firebase.
+      firestore().
+      collection("pixels").
+      onSnapshot((coll) => {
+        this.setState({ pixels: coll.docs.map((doc) => doc.data()) })
+
+      })
+
+  }
+  handlePickedColor(color) {
+
+
+    firebase.firestore().collection("pixels").add({
+
+      ...this.state.selectedCoordinate, color: color.hex
+
+    })
+      .then(function (docRef) {
+
+
+
+      })
+      .catch(function (error) {
+
+      });
+    this.setState({
+      pixels: this.state.pixels.concat({
+        ...this.state.selectedCoordinate, color: color.hex
+      })
+    }, () => { this.setState({ selectedCoordinate: null }) })
+
+
   }
   render() {
 
@@ -45,13 +87,14 @@ class App extends Component {
             </div>)
           })}
         </div>
-        <div style={{
+        {this.state.selectedCoordinate && <div style={{
           position: "absolute",
-          top: 100,
-          left: 100,
+          left: (this.state.selectedCoordinate.x + 1) * PIXEL_SIZE,
+          top: (this.state.selectedCoordinate.y + 1) * PIXEL_SIZE,
         }}>
-          <CirclePicker />
+          <CirclePicker onChangeComplete={this.handlePickedColor.bind(this)} />
         </div>
+        }
       </div>
     );
   }
